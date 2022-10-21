@@ -1,25 +1,55 @@
+"""
+ПЗ 2
+Выполнили студенты группы М3О-421Б-19
+Димухаметов Данил
+Нуштаева Юлия
+Петина Екатерина
+"""
+
+# ---------------------Импорт необходимых модулей---------------------
 import pygame
 import os
 import random
+from random import uniform
+from enum import Enum, auto
+
+
 pygame.init()
 
 # Global Constants
+# ---------------------Определение размера экрана---------------------
 SCREEN_HEIGHT = 600
 SCREEN_WIDTH = 1100
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-RUNNING = [pygame.image.load(os.path.join("Assets/Dino", "DinoRun1.png")),
-           pygame.image.load(os.path.join("Assets/Dino", "DinoRun2.png"))]
-JUMPING = pygame.image.load(os.path.join("Assets/Dino", "DinoJump.png"))
-DUCKING = [pygame.image.load(os.path.join("Assets/Dino", "DinoDuck1.png")),
-           pygame.image.load(os.path.join("Assets/Dino", "DinoDuck2.png"))]
+# ------------------------ Определение текстур------------------------
+# RUNNING = [pygame.image.load(os.path.join("Assets/Dino", "DinoRun1.png")),
+#            pygame.image.load(os.path.join("Assets/Dino", "DinoRun2.png"))]
+# JUMPING = pygame.image.load(os.path.join("Assets/Dino", "DinoJump.png"))
+# DUCKING = [pygame.image.load(os.path.join("Assets/Dino", "DinoDuck1.png")),
+#            pygame.image.load(os.path.join("Assets/Dino", "DinoDuck2.png"))]
+#
+# SMALL_CACTUS = [pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus1.png")),
+#                 pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus2.png")),
+#                 pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus3.png"))]
+# LARGE_CACTUS = [pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus1.png")),
+#                 pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus2.png")),
+#                 pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus3.png"))]
 
-SMALL_CACTUS = [pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus1.png")),
-                pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus2.png")),
-                pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus3.png"))]
-LARGE_CACTUS = [pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus1.png")),
-                pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus2.png")),
-                pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus3.png"))]
+RUNNING = [pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus1.png")),
+           pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus1.png"))]
+
+DUCKING = [pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus2.png")),
+           pygame.image.load(os.path.join("Assets/Cactus", "SmallCactus2.png"))]
+
+JUMPING = pygame.image.load(os.path.join("Assets/Cactus", "LargeCactus1.png"))
+
+SMALL_CACTUS = [pygame.image.load(os.path.join("Assets/Dino", "DinoRun1.png")),
+                pygame.image.load(os.path.join("Assets/Dino", "DinoRun2.png")),
+                pygame.image.load(os.path.join("Assets/Dino", "DinoRun2.png"))]
+LARGE_CACTUS = [pygame.image.load(os.path.join("Assets/Dino", "DinoDuck1.png")),
+                pygame.image.load(os.path.join("Assets/Dino", "DinoDuck2.png")),
+                pygame.image.load(os.path.join("Assets/Dino", "DinoDuck2.png"))]
 
 BIRD = [pygame.image.load(os.path.join("Assets/Bird", "Bird1.png")),
         pygame.image.load(os.path.join("Assets/Bird", "Bird2.png"))]
@@ -29,20 +59,28 @@ CLOUD = pygame.image.load(os.path.join("Assets/Other", "Cloud.png"))
 BG = pygame.image.load(os.path.join("Assets/Other", "Track.png"))
 
 
+class DinoState(Enum):
+    duck = auto()
+    run = auto()
+    jump = auto()
+
+
+# ------------------------Класс динозаврика------------------------
 class Dinosaur:
     X_POS = 80
     Y_POS = 310
     Y_POS_DUCK = 340
     JUMP_VEL = 8.5
 
+    # Конструктор класса
+    # Определяем начальное состояние динозавра и передаём полям класса глобальные переменные
     def __init__(self):
         self.duck_img = DUCKING
         self.run_img = RUNNING
         self.jump_img = JUMPING
 
-        self.dino_duck = False
-        self.dino_run = True
-        self.dino_jump = False
+        self.dino_state: DinoState
+        self.dino_state = DinoState.run
 
         self.step_index = 0
         self.jump_vel = self.JUMP_VEL
@@ -51,30 +89,32 @@ class Dinosaur:
         self.dino_rect.x = self.X_POS
         self.dino_rect.y = self.Y_POS
 
-    def update(self, userInput):
-        if self.dino_duck:
+    def update(self, userInput) -> None:
+        """
+        Функция обновления состояния динозавра
+        :param userInput: Вход с клавиатуры
+        :return:
+        """
+        if self.dino_state == DinoState.duck:
             self.duck()
-        if self.dino_run:
+        if self.dino_state == DinoState.run:
             self.run()
-        if self.dino_jump:
+        if self.dino_state == DinoState.jump:
             self.jump()
 
         if self.step_index >= 10:
             self.step_index = 0
 
-        if userInput[pygame.K_UP] and not self.dino_jump:
-            self.dino_duck = False
-            self.dino_run = False
-            self.dino_jump = True
-        elif userInput[pygame.K_DOWN] and not self.dino_jump:
-            self.dino_duck = True
-            self.dino_run = False
-            self.dino_jump = False
-        elif not (self.dino_jump or userInput[pygame.K_DOWN]):
-            self.dino_duck = False
-            self.dino_run = True
-            self.dino_jump = False
+        # Установка состояния динозавтра в зависимости от нажатой пользователем клавиши
+        if userInput[pygame.K_UP] and not self.dino_state == DinoState.jump:
+            self.dino_state = DinoState.jump
+        elif userInput[pygame.K_DOWN] and not self.dino_state == DinoState.jump:
+            self.dino_state = DinoState.duck
+        elif not (self.dino_state == DinoState.jump or userInput[pygame.K_DOWN]):
+            self.dino_state = DinoState.run
 
+    # Функции отображения динозаврика в зависимости от нажатой кнопки
+    # Ползанье
     def duck(self):
         self.image = self.duck_img[self.step_index // 5]
         self.dino_rect = self.image.get_rect()
@@ -82,6 +122,7 @@ class Dinosaur:
         self.dino_rect.y = self.Y_POS_DUCK
         self.step_index += 1
 
+    # Бег
     def run(self):
         self.image = self.run_img[self.step_index // 5]
         self.dino_rect = self.image.get_rect()
@@ -89,19 +130,20 @@ class Dinosaur:
         self.dino_rect.y = self.Y_POS
         self.step_index += 1
 
+    # Прыжок
     def jump(self):
         self.image = self.jump_img
-        if self.dino_jump:
+        if self.dino_state == DinoState.jump:
             self.dino_rect.y -= self.jump_vel * 4
             self.jump_vel -= 0.8
         if self.jump_vel < - self.JUMP_VEL:
-            self.dino_jump = False
+            self.dino_state = DinoState.run
             self.jump_vel = self.JUMP_VEL
 
     def draw(self, SCREEN):
         SCREEN.blit(self.image, (self.dino_rect.x, self.dino_rect.y))
 
-
+# ------------Класс облака------------
 class Cloud:
     def __init__(self):
         self.x = SCREEN_WIDTH + random.randint(800, 1000)
@@ -118,11 +160,11 @@ class Cloud:
     def draw(self, SCREEN):
         SCREEN.blit(self.image, (self.x, self.y))
 
-
+# ------------Родительский класс препятствия------------
 class Obstacle:
     def __init__(self, image, type):
         self.image = image
-        self.type = type
+        self._type = type
         self.rect = self.image[self.type].get_rect()
         self.rect.x = SCREEN_WIDTH
 
@@ -134,21 +176,27 @@ class Obstacle:
     def draw(self, SCREEN):
         SCREEN.blit(self.image[self.type], self.rect)
 
+# Интерфейс для определения типа кактуса
+class IRandomType():
+    def get(self):
+        return random.randint(0, 2)
 
-class SmallCactus(Obstacle):
+# ------------Класс маленького кактуса------------
+class SmallCactus(Obstacle, IRandomType):
     def __init__(self, image):
-        self.type = random.randint(0, 2)
+        #self.type = random.randint(0, 2)
+        self.type = super().get()
         super().__init__(image, self.type)
         self.rect.y = 325
 
-
-class LargeCactus(Obstacle):
+# ------------Класс большого кактуса------------
+class LargeCactus(Obstacle, IRandomType):
     def __init__(self, image):
-        self.type = random.randint(0, 2)
+        self.type = super().get()
         super().__init__(image, self.type)
         self.rect.y = 300
 
-
+# ------------Класс птицы------------
 class Bird(Obstacle):
     def __init__(self, image):
         self.type = 0
@@ -178,10 +226,17 @@ def main():
     death_count = 0
 
     def score():
+        """
+        Функция подсчёта общего счёта
+        :return:
+        """
         global points, game_speed
         points += 1
         if points % 100 == 0:
-            game_speed += 1
+            if game_speed > 25:
+                game_speed += random.randint(-5, 5)
+            else:
+                game_speed += random.randint(0, 5)
 
         text = font.render("Points: " + str(points), True, (0, 0, 0))
         textRect = text.get_rect()
@@ -189,6 +244,10 @@ def main():
         SCREEN.blit(text, textRect)
 
     def background():
+        """
+        Функция отрисовки фона
+        :return:
+        """
         global x_pos_bg, y_pos_bg
         image_width = BG.get_width()
         SCREEN.blit(BG, (x_pos_bg, y_pos_bg))
@@ -203,12 +262,16 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
-        SCREEN.fill((255, 255, 255))
         userInput = pygame.key.get_pressed()
+        if userInput[pygame.K_DOWN]:
+            SCREEN.fill((uniform(0, 255), uniform(0, 255), uniform(0, 255)))
+        else:
+            SCREEN.fill((255, 255, 255))
 
         player.draw(SCREEN)
         player.update(userInput)
 
+        # Создание препятствий
         if len(obstacles) == 0:
             if random.randint(0, 2) == 0:
                 obstacles.append(SmallCactus(SMALL_CACTUS))
@@ -216,7 +279,7 @@ def main():
                 obstacles.append(LargeCactus(LARGE_CACTUS))
             elif random.randint(0, 2) == 2:
                 obstacles.append(Bird(BIRD))
-
+        # Отрисовка препятствий
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
             obstacle.update()
@@ -244,7 +307,7 @@ def menu(death_count):
         font = pygame.font.Font('freesansbold.ttf', 30)
 
         if death_count == 0:
-            text = font.render("Press any Key to Start", True, (0, 0, 0))
+            text = font.render("Press any Key to Start or write proper TT", True, (0, 0, 0))
         elif death_count > 0:
             text = font.render("Press any Key to Restart", True, (0, 0, 0))
             score = font.render("Your Score: " + str(points), True, (0, 0, 0))
